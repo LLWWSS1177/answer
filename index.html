@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>答案之书 — 随机一句</title>
+  <style>
+    /* 极简“空白”样式，中心显示一句答案 */
+    html,body { height:100%; margin:0; background:#fff; color:#111; }
+    .wrap {
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+      text-align:center;
+    }
+    .answer {
+      font-family: system-ui, -apple-system, "Helvetica Neue", Arial, "PingFang SC", "Microsoft Yahei", sans-serif;
+      font-size: clamp(20px, 6vw, 48px);
+      line-height:1.2;
+      max-width:1200px;
+      transition: opacity .25s ease, transform .25s ease;
+      opacity:1;
+    }
+    .answer.hidden { opacity:0; transform: translateY(6px) scale(.998); }
+    .controls {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:13px;
+    }
+    button {
+      background:#111;
+      color:#fff;
+      border: none;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+    }
+    button.secondary { background:#666; }
+    .hint { color:#666; font-size:12px; margin-left:6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="answer" class="answer">载入中…</div>
+  </div>
+
+  <div class="controls" aria-hidden="true">
+    <button id="newBtn">换一个</button>
+    <button id="copyBtn" class="secondary">复制</button>
+    <div class="hint">按空格也可以换一个</div>
+  </div>
+
+  <script>
+    (function(){
+      const el = document.getElementById('answer');
+      const newBtn = document.getElementById('newBtn');
+      const copyBtn = document.getElementById('copyBtn');
+
+      // 如果你有一个 answers.json（与 index.html 同目录），它应该是一个字符串数组：
+      // ["答案 A", "答案 B", ...]
+      // 脚本会优先尝试加载 answers.json；若不存在则使用内置示例列表。
+      const builtin = [
+        "答案一：顺其自然。",
+        "答案二：大胆去做，失败也有价值。",
+        "答案三：保持好奇，持续学习。",
+        "答案四：凡事三思而后行，但不要过度犹豫。",
+        "答案五：与人为善，善待自己。"
+      ];
+
+      let answers = builtin;
+
+      function shufflePick(arr) {
+        if (!arr || arr.length === 0) return "";
+        return arr[Math.floor(Math.random()*arr.length)];
+      }
+
+      function show(text) {
+        el.classList.add('hidden');
+        setTimeout(() => {
+          el.textContent = text;
+          el.classList.remove('hidden');
+        }, 180);
+      }
+
+      function showRandom() {
+        show(shufflePick(answers));
+      }
+
+      // 尝试加载 answers.json（相对路径）
+      fetch('./answers.json', {cache: "no-store"}).then(r=>{
+        if (!r.ok) throw new Error('no json');
+        return r.json();
+      }).then(json=>{
+        if (Array.isArray(json) && json.length>0) {
+          answers = json.map(String);
+        }
+      }).catch(()=>{/* 忽略错误，使用内置 */})
+      .finally(()=> {
+        // 首次显示
+        showRandom();
+      });
+
+      // 交互
+      newBtn.addEventListener('click', showRandom);
+      document.addEventListener('keydown', e => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          showRandom();
+        }
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(el.textContent || '');
+          copyBtn.textContent = '已复制';
+          setTimeout(()=> copyBtn.textContent = '复制', 1200);
+        } catch(e) {
+          copyBtn.textContent = '复制失败';
+          setTimeout(()=> copyBtn.textContent = '复制', 1200);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
